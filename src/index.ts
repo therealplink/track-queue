@@ -49,11 +49,11 @@ const appendTracks = (newTracks: ITrack[]) => {
   queueState.orderedIds = updatedQueueObj.orderedIds;
 };
 
-const getNextTrack = (trackId: any) => {
+const getNext = (trackId: any) => {
   queueState.tracks[trackId].next;
 };
 
-const getPrevTrack = (trackId: any) => {
+const getPrev = (trackId: any) => {
   queueState.tracks[trackId].prev;
 };
 
@@ -62,16 +62,18 @@ const resetQueue = () => {
 };
 
 const getOrderedIds = () => queueState.orderedIds;
+const getTracks = () => getOrderedIds().map(id => queueState.tracks[id]);
 const isTrackQueueEmpty = () => queueState.orderedIds.length === 0;
 const getTrackQueueState = () => queueState;
 
 export {
   getTrackQueueState,
   isTrackQueueEmpty,
+  getTracks,
   getOrderedIds,
   resetQueue,
-  getPrevTrack,
-  getNextTrack,
+  getPrev,
+  getNext,
   appendTracks,
   enqueueTracks
 };
