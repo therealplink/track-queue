@@ -3,10 +3,10 @@
   "version": "1.0.0",
   "description": "",
   "main": "dist/index.js",
+  "typings": "src/index.ts",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "tsc src/index.ts --outDir dist",
-    "preinstall": "npm run build"
+    "build": "tsc src/index.ts --outDir dist"
   },
   "author": "",
   "license": "ISC",
