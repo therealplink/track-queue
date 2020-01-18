@@ -129,10 +129,12 @@ it("should remove the listener", () => {
 
 it("should verify the ON_TRACK_QUEUE_CHANGED listener", () => {
   addListener(events.ON_TRACK_QUEUE_CHANGED, mockCallback);
+  const newTrack = { id: "2773", title: "Imagine Dragons - ID" };
   const mockIndex = 2;
   const id = tracks[mockIndex].id;
   enqueueTracks(tracks);
+  appendTracks([newTrack]);
   setCurrentTrack(id as any);
-
-  expect(mockCallback).toHaveBeenCalledWith(tracks);
+  expect(mockCallback).toBeCalledTimes(2);
+  expect(mockCallback).toHaveBeenLastCalledWith([...tracks, newTrack]);
 });
