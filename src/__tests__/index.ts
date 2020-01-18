@@ -138,3 +138,11 @@ it("should verify the ON_TRACK_QUEUE_CHANGED listener", () => {
   expect(mockCallback).toBeCalledTimes(2);
   expect(mockCallback).toHaveBeenLastCalledWith([...tracks, newTrack]);
 });
+
+it("should throw an error if setCurrentTrack is called with an id which is not in queue", () => {
+  try {
+    setCurrentTrack("random_string");
+  } catch (error) {
+    expect(error).toEqual(new Error("Track is not in the queue"));
+  }
+});
