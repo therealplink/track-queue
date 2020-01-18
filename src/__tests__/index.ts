@@ -2,13 +2,14 @@ import {
   setCurrentTrack,
   enqueueTracks,
   getCurrentIndex,
-  subscribeToTrackChange,
+  events,
   playNext,
   getTracks,
   appendTracks,
   isTrackQueueEmpty,
   resetQueue,
-  playPrev
+  playPrev,
+  addListener
 } from "../index";
 
 const tracks = [
@@ -53,7 +54,7 @@ it("should set track and retrieve correct index", () => {
 it("should call listener with correct track", () => {
   const testIndex = 4;
   const id = tracks[testIndex].id;
-  subscribeToTrackChange(mockCallback);
+  addListener(events.ON_SET_CURRENT_TRACK, mockCallback);
   enqueueTracks(tracks);
   setCurrentTrack(id);
   expect(mockCallback).toBeCalledWith(tracks[getCurrentIndex()]);
@@ -63,7 +64,7 @@ it("should call listener with correct track", () => {
 it("should call listener with correct track on next when any track is being played", () => {
   const mockIndex = 2;
   const id = tracks[mockIndex].id;
-  subscribeToTrackChange(mockCallback);
+  addListener(events.ON_SET_CURRENT_TRACK, mockCallback);
   enqueueTracks(tracks);
   setCurrentTrack(id as any);
   expect(mockCallback).toHaveBeenLastCalledWith(tracks[2]);
@@ -82,7 +83,7 @@ it("should call listener with correct track on next when any track is being play
 it("should call listener with correct track on prev when any track is being played", () => {
   const mockIndex = 2;
   const id = tracks[mockIndex].id;
-  subscribeToTrackChange(mockCallback);
+  addListener(events.ON_SET_CURRENT_TRACK, mockCallback);
   enqueueTracks(tracks);
   setCurrentTrack(id as any);
   expect(mockCallback).toHaveBeenLastCalledWith(tracks[2]);
@@ -113,4 +114,25 @@ it("is Trackqueue empty", () => {
   expect(isTrackQueueEmpty()).toEqual(true);
   enqueueTracks(tracks);
   expect(isTrackQueueEmpty()).toEqual(false);
+});
+
+it("should remove the listener", () => {
+  const listener = addListener(events.ON_SET_CURRENT_TRACK, mockCallback);
+  const mockIndex = 2;
+  const id = tracks[mockIndex].id;
+  listener();
+  enqueueTracks(tracks);
+  setCurrentTrack(id as any);
+
+  expect(mockCallback).toBeCalledTimes(0);
+});
+
+it("should verify the ON_TRACK_QUEUE_CHANGED listener", () => {
+  addListener(events.ON_TRACK_QUEUE_CHANGED, mockCallback);
+  const mockIndex = 2;
+  const id = tracks[mockIndex].id;
+  enqueueTracks(tracks);
+  setCurrentTrack(id as any);
+
+  expect(mockCallback).toHaveBeenCalledWith(tracks);
 });

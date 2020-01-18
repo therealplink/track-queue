@@ -3,15 +3,20 @@ import { ITrack } from "./types";
 interface TrackQueueData extends ITrack {}
 
 const events = {
-  ON_SET_CURRENT_TRACK: "ON_SET_CURRENT_TRACK"
+  ON_SET_CURRENT_TRACK: "ON_SET_CURRENT_TRACK",
+  ON_TRACK_QUEUE_CHANGED: "ON_TRACK_QUEUE_CHANGED"
 };
 
 let listeners = {
-  [events.ON_SET_CURRENT_TRACK]: []
+  [events.ON_SET_CURRENT_TRACK]: [] as any,
+  [events.ON_TRACK_QUEUE_CHANGED]: [] as any
 };
 
-let subscribeToTrackChange = (callback: any) => {
-  listeners[events.ON_SET_CURRENT_TRACK].push(callback);
+const addListener = (on: string, callback) => {
+  listeners[on].push(callback);
+  return () => {
+    listeners[on] = listeners[on].filter(c => c !== callback);
+  };
 };
 
 export interface TrackQueueState {
@@ -30,10 +35,16 @@ let queueState: TrackQueueState = {
 
 const enqueueTracks = (tracks: ITrack[]) => {
   queueState.tracks = tracks;
+  listeners[events.ON_TRACK_QUEUE_CHANGED].forEach(callback =>
+    callback(queueState.tracks)
+  );
 };
 
 const appendTracks = (newTracks: ITrack[]) => {
   queueState.tracks = queueState.tracks.concat(newTracks);
+  listeners[events.ON_TRACK_QUEUE_CHANGED].forEach(callback =>
+    callback(queueState.tracks)
+  );
 };
 
 const setCurrentTrack = (id: string | number) => {
@@ -82,5 +93,6 @@ export {
   playNext,
   appendTracks,
   enqueueTracks,
-  subscribeToTrackChange
+  addListener,
+  events
 };
