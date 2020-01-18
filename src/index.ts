@@ -1,24 +1,27 @@
 import { ITrack } from "./types";
-import { getLinkedListTracks } from "./utils";
 
-interface TrackQueueData extends ITrack {
-  next: string;
-  prev: string;
-}
+interface TrackQueueData extends ITrack {}
+
+const events = {
+  ON_SET_CURRENT_TRACK: "ON_SET_CURRENT_TRACK"
+};
+
+let listeners = {
+  [events.ON_SET_CURRENT_TRACK]: []
+};
+
+let subscribeToTrackChange = (callback: any) => {
+  listeners[events.ON_SET_CURRENT_TRACK].push(callback);
+};
 
 export interface TrackQueueState {
   tracks: TrackQueueData;
-  orderedIds: any[];
-}
-
-interface Action {
-  type: string;
-  payload: any;
+  currentIndex?: number;
 }
 
 const initialState: TrackQueueState = {
-  tracks: {} as any,
-  orderedIds: []
+  tracks: [] as any,
+  currentIndex: 0
 };
 
 let queueState: TrackQueueState = {
@@ -26,54 +29,58 @@ let queueState: TrackQueueState = {
 };
 
 const enqueueTracks = (tracks: ITrack[]) => {
-  const { newNodes, orderedIds } = getLinkedListTracks(tracks, "id");
-  queueState.tracks = newNodes;
-  queueState.orderedIds = orderedIds;
+  queueState.tracks = tracks;
 };
 
 const appendTracks = (newTracks: ITrack[]) => {
-  const { newNodes, orderedIds } = getLinkedListTracks(newTracks, "id");
-
-  const ids = initialState.orderedIds;
-  const lastTrackId = ids[ids.length - 1];
-  const prevTracks: TrackQueueData = initialState.tracks;
-  const newOrderId = orderedIds[0];
-  prevTracks[lastTrackId].next = newNodes[newOrderId]["id"];
-  newNodes[newOrderId].prev = prevTracks[lastTrackId]["id"];
-  const updatedQueueObj = {
-    linkedListTracks: { ...prevTracks, ...newNodes },
-    orderedIds: [...ids, ...orderedIds]
-  };
-
-  queueState.tracks = updatedQueueObj.linkedListTracks;
-  queueState.orderedIds = updatedQueueObj.orderedIds;
+  queueState.tracks = queueState.tracks.concat(newTracks);
 };
 
-const getNext = (trackId: any) => {
-  queueState.tracks[trackId].next;
+const setCurrentTrack = (id: string | number) => {
+  const index = queueState.tracks.findIndex(track => track.id === id);
+  if (index === -1) {
+    throw new Error("Track is not in the queue");
+  }
+
+  queueState.currentIndex = index;
+  const track = queueState.tracks[index];
+  listeners[events.ON_SET_CURRENT_TRACK].forEach(callback => callback(track));
 };
 
-const getPrev = (trackId: any) => {
-  queueState.tracks[trackId].prev;
+const playNext = () => {
+  queueState.currentIndex =
+    (queueState.currentIndex + 1) % queueState.tracks.length;
+  const track = queueState.tracks[queueState.currentIndex];
+  listeners[events.ON_SET_CURRENT_TRACK].forEach(callback => callback(track));
+  return track;
+};
+
+const playPrev = () => {
+  queueState.currentIndex =
+    (queueState.currentIndex - 1 + queueState.tracks.length) %
+    queueState.tracks.length;
+  const track = queueState.tracks[queueState.currentIndex];
+  listeners[events.ON_SET_CURRENT_TRACK].forEach(callback => callback(track));
+  return track;
 };
 
 const resetQueue = () => {
   queueState = { ...initialState };
 };
 
-const getOrderedIds = () => queueState.orderedIds;
-const getTracks = () => getOrderedIds().map(id => queueState.tracks[id]);
-const isTrackQueueEmpty = () => queueState.orderedIds.length === 0;
-const getTrackQueueState = () => queueState;
+const getTracks = () => queueState.tracks;
+const getCurrentIndex = () => queueState.currentIndex;
+const isTrackQueueEmpty = () => queueState.tracks.length === 0;
 
 export {
-  getTrackQueueState,
+  setCurrentTrack,
   isTrackQueueEmpty,
   getTracks,
-  getOrderedIds,
+  getCurrentIndex,
   resetQueue,
-  getPrev,
-  getNext,
+  playPrev,
+  playNext,
   appendTracks,
-  enqueueTracks
+  enqueueTracks,
+  subscribeToTrackChange
 };
