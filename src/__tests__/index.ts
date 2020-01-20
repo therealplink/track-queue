@@ -1,4 +1,6 @@
-import {
+import TrackQueue from "../index";
+
+const {
   setCurrentTrack,
   enqueueTracks,
   getCurrentIndex,
@@ -8,12 +10,13 @@ import {
   appendTracks,
   isTrackQueueEmpty,
   resetQueue,
+  setCurrentIndex,
   playPrev,
   addListener
-} from "../index";
+} = TrackQueue();
 
 const tracks = [
-  { id: "djj", title: "Imagine Dragons - Monster" },
+  { id: "44566", title: "Imagine Dragons - Monster" },
   { id: 312, title: "Imagine Dragons - Dream " },
   { id: 413, title: "Imagine Dragons - Radioactive" },
   { id: 414, title: "Imagine Dragons - Demons" },
@@ -142,6 +145,28 @@ it("should verify the ON_TRACK_QUEUE_CHANGED listener", () => {
 it("should throw an error if setCurrentTrack is called with an id which is not in queue", () => {
   try {
     setCurrentTrack("random_string");
+  } catch (error) {
+    expect(error).toEqual(new Error("Track is not in the queue"));
+  }
+});
+
+it("should check if setCurrentIndex returns the correct track", () => {
+  addListener(events.ON_SET_CURRENT_TRACK, mockCallback);
+  const mockIndex = 3;
+  enqueueTracks(tracks);
+  setCurrentIndex(mockIndex);
+  expect(getCurrentIndex()).toBe(mockIndex);
+  expect(mockCallback).toHaveBeenLastCalledWith(tracks[mockIndex]);
+});
+
+it("should check if setCurrentIndex throws an error if track is not present", () => {
+  addListener(events.ON_SET_CURRENT_TRACK, mockCallback);
+  const mockIndex = 14848;
+  enqueueTracks(tracks);
+  try {
+    setCurrentIndex(mockIndex);
+    expect(getCurrentIndex()).toBe(mockIndex);
+    expect(mockCallback).toHaveBeenLastCalledWith(tracks[mockIndex]);
   } catch (error) {
     expect(error).toEqual(new Error("Track is not in the queue"));
   }

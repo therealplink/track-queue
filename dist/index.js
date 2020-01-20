@@ -10,59 +10,77 @@ var __assign = (this && this.__assign) || function () {
     };
     return __assign.apply(this, arguments);
 };
-var __spreadArrays = (this && this.__spreadArrays) || function () {
-    for (var s = 0, i = 0, il = arguments.length; i < il; i++) s += arguments[i].length;
-    for (var r = Array(s), k = 0, i = 0; i < il; i++)
-        for (var a = arguments[i], j = 0, jl = a.length; j < jl; j++, k++)
-            r[k] = a[j];
-    return r;
-};
+var _a;
 exports.__esModule = true;
-var utils_1 = require("./utils");
+var events = {
+    ON_SET_CURRENT_TRACK: "ON_SET_CURRENT_TRACK",
+    ON_TRACK_QUEUE_CHANGED: "ON_TRACK_QUEUE_CHANGED"
+};
+exports.events = events;
+var listeners = (_a = {},
+    _a[events.ON_SET_CURRENT_TRACK] = [],
+    _a[events.ON_TRACK_QUEUE_CHANGED] = [],
+    _a);
+var addListener = function (on, callback) {
+    listeners[on].push(callback);
+    return function () {
+        listeners[on] = listeners[on].filter(function (c) { return c !== callback; });
+    };
+};
+exports.addListener = addListener;
 var initialState = {
-    tracks: {},
-    orderedIds: []
+    tracks: [],
+    currentIndex: 0
 };
 var queueState = __assign({}, initialState);
 var enqueueTracks = function (tracks) {
-    var _a = utils_1.getLinkedListTracks(tracks, "id"), newNodes = _a.newNodes, orderedIds = _a.orderedIds;
-    queueState.tracks = newNodes;
-    queueState.orderedIds = orderedIds;
+    queueState.tracks = tracks;
+    listeners[events.ON_TRACK_QUEUE_CHANGED].forEach(function (callback) {
+        return callback(queueState.tracks);
+    });
 };
 exports.enqueueTracks = enqueueTracks;
 var appendTracks = function (newTracks) {
-    var _a = utils_1.getLinkedListTracks(newTracks, "id"), newNodes = _a.newNodes, orderedIds = _a.orderedIds;
-    var ids = initialState.orderedIds;
-    var lastTrackId = ids[ids.length - 1];
-    var prevTracks = initialState.tracks;
-    var newOrderId = orderedIds[0];
-    prevTracks[lastTrackId].next = newNodes[newOrderId]["id"];
-    newNodes[newOrderId].prev = prevTracks[lastTrackId]["id"];
-    var updatedQueueObj = {
-        linkedListTracks: __assign(__assign({}, prevTracks), newNodes),
-        orderedIds: __spreadArrays(ids, orderedIds)
-    };
-    queueState.tracks = updatedQueueObj.linkedListTracks;
-    queueState.orderedIds = updatedQueueObj.orderedIds;
+    queueState.tracks = queueState.tracks.concat(newTracks);
+    listeners[events.ON_TRACK_QUEUE_CHANGED].forEach(function (callback) {
+        return callback(queueState.tracks);
+    });
 };
 exports.appendTracks = appendTracks;
-var getNext = function (trackId) {
-    queueState.tracks[trackId].next;
+var setCurrentTrack = function (id) {
+    var index = queueState.tracks.findIndex(function (track) { return track.id === id; });
+    if (index === -1) {
+        throw new Error("Track is not in the queue");
+    }
+    queueState.currentIndex = index;
+    var track = queueState.tracks[index];
+    listeners[events.ON_SET_CURRENT_TRACK].forEach(function (callback) { return callback(track); });
 };
-exports.getNext = getNext;
-var getPrev = function (trackId) {
-    queueState.tracks[trackId].prev;
+exports.setCurrentTrack = setCurrentTrack;
+var playNext = function () {
+    queueState.currentIndex =
+        (queueState.currentIndex + 1) % queueState.tracks.length;
+    var track = queueState.tracks[queueState.currentIndex];
+    listeners[events.ON_SET_CURRENT_TRACK].forEach(function (callback) { return callback(track); });
+    return track;
 };
-exports.getPrev = getPrev;
+exports.playNext = playNext;
+var playPrev = function () {
+    queueState.currentIndex =
+        (queueState.currentIndex - 1 + queueState.tracks.length) %
+            queueState.tracks.length;
+    var track = queueState.tracks[queueState.currentIndex];
+    listeners[events.ON_SET_CURRENT_TRACK].forEach(function (callback) { return callback(track); });
+    return track;
+};
+exports.playPrev = playPrev;
 var resetQueue = function () {
     queueState = __assign({}, initialState);
 };
 exports.resetQueue = resetQueue;
-var getOrderedIds = function () { return queueState.orderedIds; };
-exports.getOrderedIds = getOrderedIds;
-var getTracks = function () { return getOrderedIds().map(function (id) { return queueState.tracks[id]; }); };
+var getTracks = function () { return queueState.tracks; };
 exports.getTracks = getTracks;
-var isTrackQueueEmpty = function () { return queueState.orderedIds.length === 0; };
+var getCurrentIndex = function () { return queueState.currentIndex; };
+exports.getCurrentIndex = getCurrentIndex;
+var isTrackQueueEmpty = function () { return queueState.tracks.length === 0; };
 exports.isTrackQueueEmpty = isTrackQueueEmpty;
-var getTrackQueueState = function () { return queueState; };
-exports.getTrackQueueState = getTrackQueueState;
