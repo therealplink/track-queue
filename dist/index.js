@@ -10,77 +10,105 @@ var __assign = (this && this.__assign) || function () {
     };
     return __assign.apply(this, arguments);
 };
-var _a;
 exports.__esModule = true;
 var events = {
     ON_SET_CURRENT_TRACK: "ON_SET_CURRENT_TRACK",
-    ON_TRACK_QUEUE_CHANGED: "ON_TRACK_QUEUE_CHANGED"
+    ON_TRACK_QUEUE_CHANGED: "ON_TRACK_QUEUE_CHANGED",
+    ON_TRACK_STATE_CHANGE: "ON_TRACK_STATE_CHANGE"
 };
-exports.events = events;
-var listeners = (_a = {},
-    _a[events.ON_SET_CURRENT_TRACK] = [],
-    _a[events.ON_TRACK_QUEUE_CHANGED] = [],
-    _a);
-var addListener = function (on, callback) {
-    listeners[on].push(callback);
-    return function () {
-        listeners[on] = listeners[on].filter(function (c) { return c !== callback; });
+var TrackQueue = function () {
+    var _a;
+    var listeners = (_a = {},
+        _a[events.ON_SET_CURRENT_TRACK] = [],
+        _a[events.ON_TRACK_QUEUE_CHANGED] = [],
+        _a[events.ON_TRACK_STATE_CHANGE] = [],
+        _a);
+    var addListener = function (on, callback) {
+        listeners[on].push(callback);
+        return function () {
+            listeners[on] = listeners[on].filter(function (c) { return c !== callback; });
+        };
+    };
+    var initialState = {
+        tracks: [],
+        currentIndex: null
+    };
+    var queueState = __assign({}, initialState);
+    var enqueueTracks = function (tracks) {
+        queueState.tracks = tracks;
+        listeners[events.ON_TRACK_QUEUE_CHANGED].forEach(function (callback) {
+            return callback(queueState.tracks);
+        });
+        listeners[events.ON_TRACK_STATE_CHANGE].forEach(function (callback) { return callback(); });
+    };
+    var appendTracks = function (newTracks) {
+        queueState.tracks = queueState.tracks.concat(newTracks);
+        listeners[events.ON_TRACK_QUEUE_CHANGED].forEach(function (callback) {
+            return callback(queueState.tracks);
+        });
+        listeners[events.ON_TRACK_STATE_CHANGE].forEach(function (callback) { return callback(); });
+    };
+    var setCurrentTrack = function (id) {
+        var index = queueState.tracks.findIndex(function (track) { return track.id === id; });
+        if (index === -1) {
+            throw new Error("Track is not in the queue");
+        }
+        queueState.currentIndex = index;
+        var track = queueState.tracks[index];
+        listeners[events.ON_SET_CURRENT_TRACK].forEach(function (callback) { return callback(track); });
+        listeners[events.ON_TRACK_STATE_CHANGE].forEach(function (callback) { return callback(); });
+    };
+    var setCurrentIndex = function (index) {
+        var track = queueState.tracks[index];
+        if (!track) {
+            throw new Error("Track is not in the queue");
+        }
+        queueState.currentIndex = index;
+        listeners[events.ON_SET_CURRENT_TRACK].forEach(function (callback) { return callback(track); });
+        listeners[events.ON_TRACK_STATE_CHANGE].forEach(function (callback) { return callback(); });
+    };
+    var playNext = function () {
+        queueState.currentIndex =
+            (queueState.currentIndex + 1) % queueState.tracks.length;
+        var track = queueState.tracks[queueState.currentIndex];
+        listeners[events.ON_SET_CURRENT_TRACK].forEach(function (callback) { return callback(track); });
+        listeners[events.ON_TRACK_STATE_CHANGE].forEach(function (callback) { return callback(); });
+        return track;
+    };
+    var playPrev = function () {
+        queueState.currentIndex =
+            (queueState.currentIndex - 1 + queueState.tracks.length) %
+                queueState.tracks.length;
+        var track = queueState.tracks[queueState.currentIndex];
+        listeners[events.ON_SET_CURRENT_TRACK].forEach(function (callback) { return callback(track); });
+        listeners[events.ON_TRACK_STATE_CHANGE].forEach(function (callback) { return callback(); });
+        return track;
+    };
+    var resetQueue = function () {
+        queueState = __assign({}, initialState);
+        listeners[events.ON_TRACK_QUEUE_CHANGED].forEach(function (callback) {
+            return callback(queueState.tracks);
+        });
+        listeners[events.ON_TRACK_STATE_CHANGE].forEach(function (callback) { return callback(); });
+    };
+    var getTracks = function () { return queueState.tracks; };
+    var getCurrentIndex = function () { return queueState.currentIndex; };
+    var getCurrentState = function () { return queueState; };
+    var isTrackQueueEmpty = function () { return queueState.tracks.length === 0; };
+    return {
+        setCurrentTrack: setCurrentTrack,
+        isTrackQueueEmpty: isTrackQueueEmpty,
+        getTracks: getTracks,
+        getCurrentIndex: getCurrentIndex,
+        resetQueue: resetQueue,
+        playPrev: playPrev,
+        playNext: playNext,
+        appendTracks: appendTracks,
+        enqueueTracks: enqueueTracks,
+        addListener: addListener,
+        setCurrentIndex: setCurrentIndex,
+        getCurrentState: getCurrentState,
+        events: events
     };
 };
-exports.addListener = addListener;
-var initialState = {
-    tracks: [],
-    currentIndex: 0
-};
-var queueState = __assign({}, initialState);
-var enqueueTracks = function (tracks) {
-    queueState.tracks = tracks;
-    listeners[events.ON_TRACK_QUEUE_CHANGED].forEach(function (callback) {
-        return callback(queueState.tracks);
-    });
-};
-exports.enqueueTracks = enqueueTracks;
-var appendTracks = function (newTracks) {
-    queueState.tracks = queueState.tracks.concat(newTracks);
-    listeners[events.ON_TRACK_QUEUE_CHANGED].forEach(function (callback) {
-        return callback(queueState.tracks);
-    });
-};
-exports.appendTracks = appendTracks;
-var setCurrentTrack = function (id) {
-    var index = queueState.tracks.findIndex(function (track) { return track.id === id; });
-    if (index === -1) {
-        throw new Error("Track is not in the queue");
-    }
-    queueState.currentIndex = index;
-    var track = queueState.tracks[index];
-    listeners[events.ON_SET_CURRENT_TRACK].forEach(function (callback) { return callback(track); });
-};
-exports.setCurrentTrack = setCurrentTrack;
-var playNext = function () {
-    queueState.currentIndex =
-        (queueState.currentIndex + 1) % queueState.tracks.length;
-    var track = queueState.tracks[queueState.currentIndex];
-    listeners[events.ON_SET_CURRENT_TRACK].forEach(function (callback) { return callback(track); });
-    return track;
-};
-exports.playNext = playNext;
-var playPrev = function () {
-    queueState.currentIndex =
-        (queueState.currentIndex - 1 + queueState.tracks.length) %
-            queueState.tracks.length;
-    var track = queueState.tracks[queueState.currentIndex];
-    listeners[events.ON_SET_CURRENT_TRACK].forEach(function (callback) { return callback(track); });
-    return track;
-};
-exports.playPrev = playPrev;
-var resetQueue = function () {
-    queueState = __assign({}, initialState);
-};
-exports.resetQueue = resetQueue;
-var getTracks = function () { return queueState.tracks; };
-exports.getTracks = getTracks;
-var getCurrentIndex = function () { return queueState.currentIndex; };
-exports.getCurrentIndex = getCurrentIndex;
-var isTrackQueueEmpty = function () { return queueState.tracks.length === 0; };
-exports.isTrackQueueEmpty = isTrackQueueEmpty;
+exports["default"] = TrackQueue;

@@ -3,11 +3,11 @@
   "version": "1.0.0",
   "description": "",
   "main": "dist/index.js",
-  "typings": "src/index.ts",
+  "typings": "dist/index.d.ts",
   "scripts": {
     "test": "jest",
     "test-coverage": "jest --collectCoverage",
-    "build": "tsc src/index.ts --outDir dist --lib es2015"
+    "build": "tsc src/index.ts --outDir dist --lib es2015 --declaration"
   },
   "author": "",
   "license": "ISC",

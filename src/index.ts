@@ -9,13 +9,15 @@ export interface TrackQueueState {
 
 const events = {
   ON_SET_CURRENT_TRACK: "ON_SET_CURRENT_TRACK",
-  ON_TRACK_QUEUE_CHANGED: "ON_TRACK_QUEUE_CHANGED"
+  ON_TRACK_QUEUE_CHANGED: "ON_TRACK_QUEUE_CHANGED",
+  ON_TRACK_STATE_CHANGE: "ON_TRACK_STATE_CHANGE"
 };
 
 const TrackQueue = () => {
   let listeners = {
     [events.ON_SET_CURRENT_TRACK]: [] as any,
-    [events.ON_TRACK_QUEUE_CHANGED]: [] as any
+    [events.ON_TRACK_QUEUE_CHANGED]: [] as any,
+    [events.ON_TRACK_STATE_CHANGE]: [] as any
   };
 
   const addListener = (on: string, callback) => {
@@ -27,7 +29,7 @@ const TrackQueue = () => {
 
   const initialState: TrackQueueState = {
     tracks: [] as any,
-    currentIndex: 0
+    currentIndex: null
   };
 
   let queueState: TrackQueueState = {
@@ -39,6 +41,7 @@ const TrackQueue = () => {
     listeners[events.ON_TRACK_QUEUE_CHANGED].forEach(callback =>
       callback(queueState.tracks)
     );
+    listeners[events.ON_TRACK_STATE_CHANGE].forEach(callback => callback());
   };
 
   const appendTracks = (newTracks: ITrack[]) => {
@@ -46,6 +49,7 @@ const TrackQueue = () => {
     listeners[events.ON_TRACK_QUEUE_CHANGED].forEach(callback =>
       callback(queueState.tracks)
     );
+    listeners[events.ON_TRACK_STATE_CHANGE].forEach(callback => callback());
   };
 
   const setCurrentTrack = (id: string | number) => {
@@ -57,6 +61,7 @@ const TrackQueue = () => {
     queueState.currentIndex = index;
     const track = queueState.tracks[index];
     listeners[events.ON_SET_CURRENT_TRACK].forEach(callback => callback(track));
+    listeners[events.ON_TRACK_STATE_CHANGE].forEach(callback => callback());
   };
 
   const setCurrentIndex = (index: number) => {
@@ -66,6 +71,7 @@ const TrackQueue = () => {
     }
     queueState.currentIndex = index;
     listeners[events.ON_SET_CURRENT_TRACK].forEach(callback => callback(track));
+    listeners[events.ON_TRACK_STATE_CHANGE].forEach(callback => callback());
   };
 
   const playNext = () => {
@@ -73,6 +79,7 @@ const TrackQueue = () => {
       (queueState.currentIndex + 1) % queueState.tracks.length;
     const track = queueState.tracks[queueState.currentIndex];
     listeners[events.ON_SET_CURRENT_TRACK].forEach(callback => callback(track));
+    listeners[events.ON_TRACK_STATE_CHANGE].forEach(callback => callback());
     return track;
   };
 
@@ -82,15 +89,21 @@ const TrackQueue = () => {
       queueState.tracks.length;
     const track = queueState.tracks[queueState.currentIndex];
     listeners[events.ON_SET_CURRENT_TRACK].forEach(callback => callback(track));
+    listeners[events.ON_TRACK_STATE_CHANGE].forEach(callback => callback());
     return track;
   };
 
   const resetQueue = () => {
     queueState = { ...initialState };
+    listeners[events.ON_TRACK_QUEUE_CHANGED].forEach(callback =>
+      callback(queueState.tracks)
+    );
+    listeners[events.ON_TRACK_STATE_CHANGE].forEach(callback => callback());
   };
 
   const getTracks = () => queueState.tracks;
   const getCurrentIndex = () => queueState.currentIndex;
+  const getCurrentState = () => queueState;
   const isTrackQueueEmpty = () => queueState.tracks.length === 0;
 
   return {
@@ -105,6 +118,7 @@ const TrackQueue = () => {
     enqueueTracks,
     addListener,
     setCurrentIndex,
+    getCurrentState,
     events
   };
 };
