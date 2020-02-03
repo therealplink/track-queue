@@ -1,23 +1,38 @@
-import { ITrack } from "./types";
+import { ITrack, Iid } from "./types";
+import { getLinkedListTracks } from "./utils";
 
-interface TrackQueueData extends ITrack {}
-
-export interface TrackQueueState {
-  tracks: TrackQueueData;
-  currentIndex?: number;
+export const errors = {
+  trackNotInQueue: new Error("Track not in queue")
+};
+interface ITrackData extends ITrack {
+  next: Iid;
+  prev: Iid;
 }
+interface TrackQueueData {
+  first: Iid;
+  last: Iid;
+  current: Iid;
+  tracks: {
+    [id: string]: ITrackData;
+  };
+}
+
+const initialState: TrackQueueData = {
+  first: null,
+  last: null,
+  current: null,
+  tracks: {}
+};
 
 const events = {
   ON_SET_CURRENT_TRACK: "ON_SET_CURRENT_TRACK",
-  ON_TRACK_QUEUE_CHANGED: "ON_TRACK_QUEUE_CHANGED",
-  ON_TRACK_STATE_CHANGE: "ON_TRACK_STATE_CHANGE"
+  ON_TRACK_QUEUE_CHANGED: "ON_TRACK_QUEUE_CHANGED"
 };
 
 const TrackQueue = () => {
   let listeners = {
     [events.ON_SET_CURRENT_TRACK]: [] as any,
-    [events.ON_TRACK_QUEUE_CHANGED]: [] as any,
-    [events.ON_TRACK_STATE_CHANGE]: [] as any
+    [events.ON_TRACK_QUEUE_CHANGED]: [] as any
   };
 
   const addListener = (on: string, callback) => {
@@ -27,70 +42,61 @@ const TrackQueue = () => {
     };
   };
 
-  const initialState: TrackQueueState = {
-    tracks: [] as any,
-    currentIndex: null
-  };
-
-  let queueState: TrackQueueState = {
+  let queueState: TrackQueueData = {
     ...initialState
   };
 
   const enqueueTracks = (tracks: ITrack[]) => {
-    queueState.tracks = tracks;
+    const { newNodes } = getLinkedListTracks(tracks, "id");
+    queueState = { ...initialState };
+
+    queueState.first = tracks[0].id;
+    queueState.last = tracks[tracks.length - 1].id;
+    queueState.tracks = newNodes;
+
     listeners[events.ON_TRACK_QUEUE_CHANGED].forEach(callback =>
       callback(queueState.tracks)
     );
-    listeners[events.ON_TRACK_STATE_CHANGE].forEach(callback => callback());
   };
 
   const appendTracks = (newTracks: ITrack[]) => {
-    queueState.tracks = queueState.tracks.concat(newTracks);
-    listeners[events.ON_TRACK_QUEUE_CHANGED].forEach(callback =>
-      callback(queueState.tracks)
-    );
-    listeners[events.ON_TRACK_STATE_CHANGE].forEach(callback => callback());
+    const { newNodes } = getLinkedListTracks(newTracks, "id");
+
+    queueState.tracks[queueState.last].next = newTracks[0].id;
+    newNodes[newTracks[0].id].prev = queueState.last;
+
+    const newQueueState = {
+      ...queueState,
+      last: newTracks[newTracks.length - 1].id,
+      tracks: {
+        ...queueState.tracks,
+        ...newNodes
+      }
+    };
+
+    queueState = newQueueState;
+
+    listeners[events.ON_TRACK_QUEUE_CHANGED].forEach(callback => callback());
   };
 
-  const setCurrentTrack = (id: string | number) => {
-    const index = queueState.tracks.findIndex(track => track.id === id);
-    if (index === -1) {
-      throw new Error("Track is not in the queue");
+  const setCurrentTrack = (id: Iid) => {
+    if (!queueState.tracks[id]) {
+      throw errors.trackNotInQueue;
     }
 
-    queueState.currentIndex = index;
-    const track = queueState.tracks[index];
-    listeners[events.ON_SET_CURRENT_TRACK].forEach(callback => callback(track));
-    listeners[events.ON_TRACK_STATE_CHANGE].forEach(callback => callback());
-  };
+    queueState.current = id;
 
-  const setCurrentIndex = (index: number) => {
-    const track = queueState.tracks[index];
-    if (!track) {
-      throw new Error("Track is not in the queue");
-    }
-    queueState.currentIndex = index;
-    listeners[events.ON_SET_CURRENT_TRACK].forEach(callback => callback(track));
-    listeners[events.ON_TRACK_STATE_CHANGE].forEach(callback => callback());
+    listeners[events.ON_SET_CURRENT_TRACK].forEach(callback => callback());
   };
 
   const playNext = () => {
-    queueState.currentIndex =
-      (queueState.currentIndex + 1) % queueState.tracks.length;
-    const track = queueState.tracks[queueState.currentIndex];
-    listeners[events.ON_SET_CURRENT_TRACK].forEach(callback => callback(track));
-    listeners[events.ON_TRACK_STATE_CHANGE].forEach(callback => callback());
-    return track;
+    const next = queueState.tracks[queueState.current].next;
+    setCurrentTrack(next);
   };
 
   const playPrev = () => {
-    queueState.currentIndex =
-      (queueState.currentIndex - 1 + queueState.tracks.length) %
-      queueState.tracks.length;
-    const track = queueState.tracks[queueState.currentIndex];
-    listeners[events.ON_SET_CURRENT_TRACK].forEach(callback => callback(track));
-    listeners[events.ON_TRACK_STATE_CHANGE].forEach(callback => callback());
-    return track;
+    const prev = queueState.tracks[queueState.current].prev;
+    setCurrentTrack(prev);
   };
 
   const resetQueue = () => {
@@ -98,26 +104,22 @@ const TrackQueue = () => {
     listeners[events.ON_TRACK_QUEUE_CHANGED].forEach(callback =>
       callback(queueState.tracks)
     );
-    listeners[events.ON_TRACK_STATE_CHANGE].forEach(callback => callback());
   };
 
   const getTracks = () => queueState.tracks;
-  const getCurrentIndex = () => queueState.currentIndex;
   const getCurrentState = () => queueState;
-  const isTrackQueueEmpty = () => queueState.tracks.length === 0;
+  const isTrackQueueEmpty = () => !queueState.first;
 
   return {
     setCurrentTrack,
     isTrackQueueEmpty,
     getTracks,
-    getCurrentIndex,
     resetQueue,
     playPrev,
     playNext,
     appendTracks,
     enqueueTracks,
     addListener,
-    setCurrentIndex,
     getCurrentState,
     events
   };

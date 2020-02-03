@@ -1,5 +1,5 @@
 export interface ITrack {
-  id?: number | string;
+  id: Iid;
   url?: string;
   title?: string;
   artwork?: string;
@@ -7,3 +7,5 @@ export interface ITrack {
   album?: string;
   [key: string]: any;
 }
+
+export type Iid = string | number;

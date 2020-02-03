@@ -1,21 +1,8 @@
-import TrackQueue from "../index";
+import TrackQueue, { errors } from "../index";
 
-const {
-  setCurrentTrack,
-  enqueueTracks,
-  getCurrentIndex,
-  events,
-  playNext,
-  getTracks,
-  appendTracks,
-  isTrackQueueEmpty,
-  resetQueue,
-  setCurrentIndex,
-  playPrev,
-  addListener
-} = TrackQueue();
+const queue = TrackQueue();
 
-const tracks = [
+const data = [
   { id: "44566", title: "Imagine Dragons - Monster" },
   { id: 312, title: "Imagine Dragons - Dream " },
   { id: 413, title: "Imagine Dragons - Radioactive" },
@@ -26,148 +13,74 @@ const tracks = [
 let mockCallback;
 
 beforeEach(() => {
-  resetQueue();
+  queue.resetQueue();
   mockCallback = jest.fn(track => {});
 });
 
-it("should set track and retrieve correct index", () => {
-  const testIndex = 0;
-  const id = tracks[testIndex].id;
-  enqueueTracks(tracks);
-  setCurrentTrack(id);
-  expect(getCurrentIndex()).toBe(testIndex);
+it("should verify enqueueTracks function", () => {
+  queue.enqueueTracks(data);
+  const newState = queue.getCurrentState();
+  expect(newState.first).toBe(data[0].id);
+  expect(newState.last).toBe(data[data.length - 1].id);
+  expect(newState.current).toBe(null);
 });
 
-it("should set track and retrieve correct index", () => {
-  const testIndex = 3;
-  const id = tracks[testIndex].id;
-  enqueueTracks(tracks);
-  setCurrentTrack(id);
-  expect(getCurrentIndex()).toBe(testIndex);
+it("should verify appendTracks function", () => {
+  const newData = [
+    { id: "18883", title: "Imagine Dragons - Time" },
+    { id: "2828282", title: "Imagine Dragons - West Coast " }
+  ];
+
+  queue.enqueueTracks(data);
+  queue.appendTracks(newData);
+  const newState = queue.getCurrentState();
+  expect(newState.first).toBe(data[0].id);
+  expect(newState.last).toBe(newData[newData.length - 1].id);
+  expect(newState.current).toBe(null);
 });
 
-it("should set track and retrieve correct index", () => {
-  const testIndex = 4;
-  const id = tracks[testIndex].id;
-  enqueueTracks(tracks);
-  setCurrentTrack(id);
-  expect(getCurrentIndex()).toBe(testIndex);
+it("should verify setCurrentTrack function", () => {
+  const newData = [
+    { id: "18883", title: "Imagine Dragons - Time" },
+    { id: "2828282", title: "Imagine Dragons - West Coast " }
+  ];
+
+  queue.enqueueTracks(data);
+  queue.appendTracks(newData);
+  queue.setCurrentTrack(newData[0].id);
+  const newState = queue.getCurrentState();
+  expect(newState.current).toBe(newData[0].id);
 });
 
-it("should call listener with correct track", () => {
-  const testIndex = 4;
-  const id = tracks[testIndex].id;
-  addListener(events.ON_SET_CURRENT_TRACK, mockCallback);
-  enqueueTracks(tracks);
-  setCurrentTrack(id);
-  expect(mockCallback).toBeCalledWith(tracks[getCurrentIndex()]);
-  expect(getCurrentIndex()).toBe(testIndex);
-});
+it("should throw error on setCurrentTrack if track is not in queue", () => {
+  const newData = [
+    { id: "18883", title: "Imagine Dragons - Time" },
+    { id: "2828282", title: "Imagine Dragons - West Coast " }
+  ];
 
-it("should call listener with correct track on next when any track is being played", () => {
-  const mockIndex = 2;
-  const id = tracks[mockIndex].id;
-  addListener(events.ON_SET_CURRENT_TRACK, mockCallback);
-  enqueueTracks(tracks);
-  setCurrentTrack(id as any);
-  expect(mockCallback).toHaveBeenLastCalledWith(tracks[2]);
-  expect(getCurrentIndex()).toBe(2);
-  playNext();
-  expect(mockCallback).toHaveBeenLastCalledWith(tracks[3]);
-  expect(getCurrentIndex()).toBe(3);
-  playNext();
-  expect(mockCallback).toHaveBeenLastCalledWith(tracks[4]);
-  expect(getCurrentIndex()).toBe(4);
-  playNext();
-  expect(mockCallback).toHaveBeenLastCalledWith(tracks[0]);
-  expect(getCurrentIndex()).toBe(0);
-});
-
-it("should call listener with correct track on prev when any track is being played", () => {
-  const mockIndex = 2;
-  const id = tracks[mockIndex].id;
-  addListener(events.ON_SET_CURRENT_TRACK, mockCallback);
-  enqueueTracks(tracks);
-  setCurrentTrack(id as any);
-  expect(mockCallback).toHaveBeenLastCalledWith(tracks[2]);
-  expect(getCurrentIndex()).toBe(2);
-  playPrev();
-  expect(mockCallback).toHaveBeenLastCalledWith(tracks[1]);
-  expect(getCurrentIndex()).toBe(1);
-  playPrev();
-  expect(mockCallback).toHaveBeenLastCalledWith(tracks[0]);
-  expect(getCurrentIndex()).toBe(0);
-  playPrev();
-  expect(mockCallback).toHaveBeenLastCalledWith(tracks[tracks.length - 1]);
-  expect(getCurrentIndex()).toBe(tracks.length - 1);
-});
-
-it("should enqueue tracks in queue", () => {
-  enqueueTracks(tracks);
-  expect(getTracks()).toBe(tracks);
-});
-
-it("should append tracks in queue", () => {
-  enqueueTracks(tracks);
-  appendTracks(tracks);
-  expect(getTracks()).toEqual(tracks.concat(tracks));
-});
-
-it("is Trackqueue empty", () => {
-  expect(isTrackQueueEmpty()).toEqual(true);
-  enqueueTracks(tracks);
-  expect(isTrackQueueEmpty()).toEqual(false);
-});
-
-it("should remove the listener", () => {
-  const listener = addListener(events.ON_SET_CURRENT_TRACK, mockCallback);
-  const mockIndex = 2;
-  const id = tracks[mockIndex].id;
-  listener();
-  enqueueTracks(tracks);
-  setCurrentTrack(id as any);
-
-  expect(mockCallback).toBeCalledTimes(0);
-});
-
-it("should verify the ON_TRACK_QUEUE_CHANGED listener", () => {
-  addListener(events.ON_TRACK_QUEUE_CHANGED, mockCallback);
-  const newTrack = { id: "2773", title: "Imagine Dragons - ID" };
-  const mockIndex = 2;
-  const id = tracks[mockIndex].id;
-  enqueueTracks(tracks);
-  appendTracks([newTrack]);
-  setCurrentTrack(id as any);
-  expect(mockCallback).toBeCalledTimes(2);
-  expect(mockCallback).toHaveBeenLastCalledWith([...tracks, newTrack]);
-});
-
-it("should throw an error if setCurrentTrack is called with an id which is not in queue", () => {
+  queue.enqueueTracks(data);
+  queue.appendTracks(newData);
   try {
-    setCurrentTrack("random_string");
+    queue.setCurrentTrack("random id");
   } catch (error) {
-    expect(error).toEqual(new Error("Track is not in the queue"));
+    expect(error).toEqual(errors.trackNotInQueue);
   }
 });
 
-it("should check if setCurrentIndex returns the correct track", () => {
-  addListener(events.ON_SET_CURRENT_TRACK, mockCallback);
-  const mockIndex = 3;
-  enqueueTracks(tracks);
-  setCurrentIndex(mockIndex);
-  expect(getCurrentIndex()).toBe(mockIndex);
-  expect(mockCallback).toHaveBeenLastCalledWith(tracks[mockIndex]);
+it("should verify playNext function", () => {
+  queue.enqueueTracks(data);
+  queue.setCurrentTrack(data[0].id);
+  queue.playNext();
+  expect(queue.getCurrentState().current).toBe(data[1].id);
+  queue.playNext();
+  expect(queue.getCurrentState().current).toBe(data[2].id);
 });
 
-it("should check if setCurrentIndex throws an error if track is not present", () => {
-  addListener(events.ON_SET_CURRENT_TRACK, mockCallback);
-  const mockIndex = 14848;
-  enqueueTracks(tracks);
-  try {
-    setCurrentIndex(mockIndex);
-    expect(getCurrentIndex()).toBe(mockIndex);
-    expect(mockCallback).toHaveBeenLastCalledWith(tracks[mockIndex]);
-  } catch (error) {
-    expect(error).toEqual(new Error("Track is not in the queue"));
-  }
+it("should verify playPrev function", () => {
+  queue.enqueueTracks(data);
+  queue.setCurrentTrack(data[data.length - 1].id);
+  queue.playPrev();
+  expect(queue.getCurrentState().current).toBe(data[data.length - 2].id);
+  queue.playPrev();
+  expect(queue.getCurrentState().current).toBe(data[data.length - 3].id);
 });
