@@ -8,7 +8,7 @@ interface ITrackData extends ITrack {
   next: Iid;
   prev: Iid;
 }
-interface TrackQueueData {
+export interface ITrackQueueState {
   first: Iid;
   last: Iid;
   current: Iid;
@@ -17,7 +17,7 @@ interface TrackQueueData {
   };
 }
 
-const initialState: TrackQueueData = {
+const initialState: ITrackQueueState = {
   first: null,
   last: null,
   current: null,
@@ -42,7 +42,7 @@ const TrackQueue = () => {
     };
   };
 
-  let queueState: TrackQueueData = {
+  let queueState: ITrackQueueState = {
     ...initialState
   };
 

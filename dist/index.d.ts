@@ -1,27 +1,35 @@
-import { ITrack } from "./types";
-interface TrackQueueData extends ITrack {
+import { ITrack, Iid } from "./types";
+export declare const errors: {
+    trackNotInQueue: Error;
+};
+interface ITrackData extends ITrack {
+    next: Iid;
+    prev: Iid;
 }
-export interface TrackQueueState {
-    tracks: TrackQueueData;
-    currentIndex?: number;
+export interface ITrackQueueState {
+    first: Iid;
+    last: Iid;
+    current: Iid;
+    tracks: {
+        [id: string]: ITrackData;
+    };
 }
 declare const TrackQueue: () => {
     setCurrentTrack: (id: string | number) => void;
     isTrackQueueEmpty: () => boolean;
-    getTracks: () => TrackQueueData;
-    getCurrentIndex: () => number;
+    getTracks: () => {
+        [id: string]: ITrackData;
+    };
     resetQueue: () => void;
-    playPrev: () => any;
-    playNext: () => any;
+    playPrev: () => void;
+    playNext: () => void;
     appendTracks: (newTracks: ITrack[]) => void;
     enqueueTracks: (tracks: ITrack[]) => void;
     addListener: (on: string, callback: any) => () => void;
-    setCurrentIndex: (index: number) => void;
-    getCurrentState: () => TrackQueueState;
+    getCurrentState: () => ITrackQueueState;
     events: {
         ON_SET_CURRENT_TRACK: string;
         ON_TRACK_QUEUE_CHANGED: string;
-        ON_TRACK_STATE_CHANGE: string;
     };
 };
 export default TrackQueue;
